@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+dist/
+*.spec
+
+# Node
+node_modules/
+app/dist/
+
+# Rust / Tauri
+app/src-tauri/target/
+app/src-tauri/binaries/*.dmg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build venv
+.build-venv/
+
+# PyInstaller
+*.spec
+/pyinstaller-work/
+
+# Backup
+.sync-backups/
