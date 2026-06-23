@@ -1,8 +1,18 @@
 import type { Plan, PlanAction } from "../api";
 
-// Sync 确认弹窗。展示 plan, 列出将替换的真实文件/目录。
-// 设计要求: 若 plan 替换任何真实文件/目录, 必须展示受影响路径并要求确认。
-// 事故防护: 每条显式列 dst_realpath, 重叠 canonical 的条目标红 (执行会自指环)。
+// 动作名 -> 糊弄的中文 (画图程序里随便打的, 不是产品文案)
+const KIND_LABEL: Record<string, string> = {
+  collect: "收",
+  migrate: "搬",
+  backup: "备",
+  link: "链",
+  relink: "修",
+  replace: "换",
+  skip: "过",
+  mkdir: "建",
+  convert_root_link: "拆",
+  error: "错",
+};
 
 interface Props {
   plan: Plan;
@@ -13,46 +23,48 @@ interface Props {
 
 export function SyncDialog({ plan, busy, onConfirm, onCancel }: Props) {
   const reals = plan.actions.filter((a) => a.requires_real_replace);
-  const overlaps = plan.actions.filter((a) => a.overlaps_canonical);
-  // 设计: 无真实替换时可直接执行不需二次确认; 但 UI 统一走弹窗便于审阅。
+  const overlaps = plan.actions.filter((a) => a.overlaps_canonical && !a.requires_real_replace);
   const needsConfirm = plan.has_real_replacements;
 
   return (
     <div className="dialog-overlay" data-testid="sync-dialog">
       <div className="dialog">
-        <h3>同步计划 ({plan.timestamp})</h3>
+        <h3>咋回事 {plan.timestamp}</h3>
 
         <div className="dialog-summary">
-          <span>共 {plan.actions.length} 项动作</span>
+          <span>{plan.actions.length} 项</span>
           <span className={reals.length ? "warn" : ""}>
-            将替换真实文件/目录: {plan.real_replacement_count}
+            会覆盖: {plan.real_replacement_count}
           </span>
-          {plan.overlap_count > 0 && (
-            <span className="danger" data-testid="overlap-warn">
-              ⚠ {plan.overlap_count} 项 target 解析落在 canonical 内
+          {overlaps.length > 0 && (
+            <span className="info" data-testid="overlap-info">
+              跳过: {overlaps.length}
             </span>
           )}
         </div>
 
         {needsConfirm && reals.length > 0 && (
           <div className="dialog-reals">
-            <h4>以下真实文件/目录将被备份后替换:</h4>
+            <h4>这 {reals.length} 个会先备份再换掉:</h4>
             <ul>
               {reals.map((a, i) => (
-                <ActionRow key={i} a={a} />
+                <ActionRow key={i} a={a} tone="real" />
               ))}
             </ul>
           </div>
         )}
 
         {overlaps.length > 0 && (
-          <details className="dialog-overlaps">
-            <summary className="danger">
-              重叠 canonical 的条目 ({overlaps.length}) — 已被引擎跳过, 仅供审阅
+          <details className="dialog-skipped">
+            <summary>
+              跳了 {overlaps.length} 项，不用管
             </summary>
+            <p>
+              这些指向跟仓库是一家的，引擎自己跳了。不用操心。
+            </p>
             <ul>
               {overlaps.slice(0, 50).map((a, i) => (
-                <ActionRow key={i} a={a} />
+                <ActionRow key={i} a={a} tone="skipped" />
               ))}
             </ul>
           </details>
@@ -60,13 +72,13 @@ export function SyncDialog({ plan, busy, onConfirm, onCancel }: Props) {
 
         {!needsConfirm && (
           <div className="dialog-safe" data-testid="dialog-safe">
-            无真实文件将被替换 — 仅建链/修链/已同步。可安全执行。
+            没啥要换的，安全的。搞不搞？
           </div>
         )}
 
         <div className="dialog-actions">
           <button onClick={onCancel} disabled={busy} data-testid="cancel-btn">
-            取消
+            算了
           </button>
           <button
             className="confirm-btn"
@@ -74,7 +86,7 @@ export function SyncDialog({ plan, busy, onConfirm, onCancel }: Props) {
             disabled={busy}
             data-testid="confirm-btn"
           >
-            {busy ? "执行中…" : needsConfirm ? "确认并执行" : "执行"}
+            {busy ? "…" : "搞"}
           </button>
         </div>
       </div>
@@ -82,14 +94,15 @@ export function SyncDialog({ plan, busy, onConfirm, onCancel }: Props) {
   );
 }
 
-function ActionRow({ a }: { a: PlanAction }) {
+function ActionRow({ a, tone }: { a: PlanAction; tone: "real" | "skipped" }) {
+  const label = KIND_LABEL[a.kind] || a.kind;
   return (
-    <li className={a.overlaps_canonical ? "danger" : ""}>
-      <code>[{a.kind}]</code> {a.name}
+    <li className={tone === "real" ? "real-replace" : "skipped-link"}>
+      [{label}] {a.name}
       <div className="action-paths">
-        <div>dst: {a.dst}</div>
+        <div>目标 {a.dst}</div>
         {a.dst_realpath && a.dst_realpath !== a.dst && (
-          <div className="realpath">realpath: {a.dst_realpath}</div>
+          <div className="realpath">实际 {a.dst_realpath}</div>
         )}
       </div>
     </li>

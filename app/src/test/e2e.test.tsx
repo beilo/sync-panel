@@ -81,8 +81,9 @@ describe("三区 UI 端到端 (真 sidecar)", () => {
     await user.click(screen.getByTestId("sync-btn"));
     await waitFor(() => expect(screen.getByTestId("sync-dialog")).toBeInTheDocument());
 
-    // fixture 故意放真实 target 目录, 验证危险计划会明确展示替换/重叠警告。
-    expect(screen.getByTestId("overlap-warn")).toBeInTheDocument();
+    // fixture 故意放真实 target 目录: 真实替换要突出; 内部重叠项只作为自动跳过信息。
+    expect(screen.getByText(/会覆盖: 2/)).toBeInTheDocument();
+    expect(screen.getByTestId("overlap-info")).toBeInTheDocument();
 
     // 确认执行
     await user.click(screen.getByTestId("confirm-btn"));
