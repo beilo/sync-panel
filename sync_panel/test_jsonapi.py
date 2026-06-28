@@ -94,8 +94,8 @@ class TestRead(Base):
 
 class TestPlan(Base):
     def test_plan_has_realpath_annotation(self):
-        # codex 有真实 skill, canonical 没有 -> plan 含 collect + map 动作
-        mkskill(self.cfg.skill_targets["codex"], "foo", "hello")
+        # agents 有真实 skill, canonical 没有 -> plan 含 collect + map 动作
+        mkskill(self.cfg.skill_targets["agents"], "foo", "hello")
         d = jsonapi.build_plan_dict(self.cfg, "20260622-201530")
         self.assertIn("actions", d)
         self.assertIn("overlap_count", d)
@@ -105,10 +105,10 @@ class TestPlan(Base):
             self.assertIn("overlaps_canonical", a)
 
     def test_plan_flags_real_replacement(self):
-        # codex 的 skills 下放真实 skill, 同名 canonical 也存在但更旧 -> 不一定 replace
+        # agents 的 skills 下放真实 skill, 同名 canonical 也存在但更旧 -> 不一定 replace
         # 这里造 map 阶段的 REAL-REPLACE: target 是真实目录, canonical 已存在
         mkskill(self.cfg.shared_skills, "foo", "canonical")
-        mkskill(self.cfg.skill_targets["codex"], "foo", "real dir at target")
+        mkskill(self.cfg.skill_targets["agents"], "foo", "real dir at target")
         d = jsonapi.build_plan_dict(self.cfg, "20260622-201530")
         # codex/foo 是真实目录且 canonical 存在 -> 应出现 requires_real_replace
         self.assertTrue(d["has_real_replacements"])
@@ -117,17 +117,17 @@ class TestPlan(Base):
 
 class TestApply(Base):
     def test_apply_executes_and_links(self):
-        mkskill(self.cfg.skill_targets["codex"], "foo", "hello")
+        mkskill(self.cfg.skill_targets["agents"], "foo", "hello")
         out = jsonapi.apply_sync(self.cfg, "20260622-201530")
         self.assertIn("result", out)
         # canonical 应已收集
         self.assertTrue((self.cfg.shared_skills / "foo" / "SKILL.md").exists())
         # codex target 应已变链接
-        entry = self.cfg.skill_targets["codex"] / "foo"
+        entry = self.cfg.skill_targets["agents"] / "foo"
         self.assertTrue(entry.is_symlink())
 
     def test_apply_idempotent(self):
-        mkskill(self.cfg.skill_targets["codex"], "foo", "hello")
+        mkskill(self.cfg.skill_targets["agents"], "foo", "hello")
         jsonapi.apply_sync(self.cfg, "20260622-201530")
         out2 = jsonapi.apply_sync(self.cfg, "20260622-201531")
         counts = out2["result"]["counts"]
@@ -139,10 +139,21 @@ class TestApply(Base):
 
 class TestStatus(Base):
     def test_status_filters_by_target(self):
-        mkskill(self.cfg.skill_targets["codex"], "foo", "hello")
-        out = jsonapi.target_status(self.cfg, "20260622-201530", "codex")
-        self.assertEqual(out["target"], "codex")
-        self.assertTrue(all(i["tool"] == "codex" for i in out["items"]))
+        mkskill(self.cfg.skill_targets["agents"], "foo", "hello")
+        out = jsonapi.target_status(self.cfg, "20260622-201530", "agents")
+        self.assertEqual(out["target"], "agents")
+        self.assertTrue(all(i["tool"] == "agents" for i in out["items"]))
+
+    def test_agent_skills_status_uses_agents_only(self):
+        mkskill(self.cfg.shared_skills, "foo", "canonical")
+        touch(self.cfg.shared_rules / "AGENTS.md", "rules")
+        out = jsonapi.target_status(self.cfg, "20260622-201530", "agent-skills")
+        self.assertEqual(out["target"], "agent-skills")
+        self.assertEqual(out["count"], 1)
+        self.assertEqual(out["items"][0]["name"], "foo")
+        self.assertEqual(out["items"][0]["tool"], "agent-skills")
+        # rule 不进入 Agent Skills 合并视图, 但仍留在全量 plan 里由同步流程处理。
+        self.assertNotIn("AGENTS.md", {i["name"] for i in out["items"]})
 
     def test_status_unknown_target(self):
         out = jsonapi.target_status(self.cfg, "20260622-201530", "bogus")
@@ -174,6 +185,13 @@ class TestCliJson(Base):
         rc, out = self._run("read", "--which", "shared-skills", "--rel", "../../secret.txt")
         d = json.loads(out)
         self.assertIn("error", d)
+
+    def test_cli_agent_skills_status_json(self):
+        mkskill(self.cfg.shared_skills, "alpha", "a")
+        rc, out = self._run("status", "--target", "agent-skills")
+        self.assertEqual(rc, 0)
+        d = json.loads(out)
+        self.assertEqual(d["target"], "agent-skills")
 
 
 if __name__ == "__main__":

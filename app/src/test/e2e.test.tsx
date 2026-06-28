@@ -37,16 +37,17 @@ describe("三区 UI 端到端 (真 sidecar)", () => {
     expect(screen.getByText("shared-rules")).toBeInTheDocument();
   });
 
-  it("三个 target 都可选, 切换触发状态加载", async () => {
+  it("Agent Skills 与 Claude Code target 可选, 切换触发状态加载", async () => {
     const user = userEvent.setup();
     render(<App />);
     await waitFor(() => screen.getByTestId("file-tree"));
 
-    expect(screen.getByTestId("target-codex")).toBeInTheDocument();
+    expect(screen.getByTestId("target-agent-skills")).toBeInTheDocument();
     expect(screen.getByTestId("target-claude-code")).toBeInTheDocument();
-    expect(screen.getByTestId("target-agents")).toBeInTheDocument();
+    expect(screen.queryByTestId("target-codex")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("target-agents")).not.toBeInTheDocument();
 
-    // 点 claude-code -> 状态框刷新
+    // 点 claude-code -> 状态框刷新, rule 不进入 Agent Skills 展示语义。
     await user.click(screen.getByTestId("target-claude-code"));
     await waitFor(() => expect(screen.getByTestId("status-box")).toBeInTheDocument());
   });
@@ -73,8 +74,8 @@ describe("三区 UI 端到端 (真 sidecar)", () => {
     render(<App />);
     await waitFor(() => screen.getByText("gamma"));
 
-    // 执行前: codex/alpha 是真实目录, 非链接
-    const alphaEntry = join(fx.home, ".codex", "skills", "alpha");
+    // 执行前: agents/alpha 是真实目录, 非链接
+    const alphaEntry = join(fx.home, ".agents", "skills", "alpha");
     expect(lstatSync(alphaEntry).isSymbolicLink()).toBe(false);
 
     // 点 Sync -> 弹窗
@@ -93,7 +94,7 @@ describe("三区 UI 端到端 (真 sidecar)", () => {
       timeout: 20000,
     });
 
-    // 真文件系统已变: canonical 收集到 alpha, codex/alpha 变链接
+    // 真文件系统已变: canonical 收集到 alpha, agents/alpha 变链接
     expect(existsSync(join(fx.home, "ai-workspace", "shared-skills", "alpha", "SKILL.md"))).toBe(true);
     expect(lstatSync(alphaEntry).isSymbolicLink()).toBe(true);
   });

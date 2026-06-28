@@ -16,7 +16,7 @@ import "./App.css";
 
 export default function App() {
   const [tree, setTree] = useState<Tree | null>(null);
-  const [target, setTarget] = useState<string>("codex");
+  const [target, setTarget] = useState<string>("agent-skills");
   const [status, setStatus] = useState<TargetStatus | null>(null);
   const [selected, setSelected] = useState<{ which: string; rel: string } | null>(null);
   const [preview, setPreview] = useState<FileContent | null>(null);
@@ -109,7 +109,7 @@ export default function App() {
       )}
 
       <div className="three-pane">
-        {/* 区1: target 选择器 */}
+        {/* 区1: target 选择器。Agent Skills 维护 ~/.agents/skills; Codex 直接读取它, rule 同步仍独立处理。 */}
         <aside className="pane target-pane">
           <h2>Target</h2>
           <ul className="target-list">
@@ -131,6 +131,9 @@ export default function App() {
           {status && (
             <div className="status-box" data-testid="status-box">
               <div className="status-count">{status.count} 项</div>
+              {target === "agent-skills" && (
+                <div className="status-hint">Codex 直接读取 ~/.agents/skills</div>
+              )}
             </div>
           )}
         </aside>

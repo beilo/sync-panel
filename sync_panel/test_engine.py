@@ -62,8 +62,8 @@ class Base(unittest.TestCase):
 
 class TestCollect(Base):
     def test_collect_when_canonical_missing(self):
-        # codex 有个真实 skill, canonical 没有 -> 应收集
-        mkskill(self.cfg.skill_targets["codex"], "foo", "hello")
+        # agents 有个真实 skill, canonical 没有 -> 应收集
+        mkskill(self.cfg.skill_targets["agents"], "foo", "hello")
         plan, result = self.run_sync()
         self.assertTrue((self.cfg.shared_skills / "foo" / "SKILL.md").exists())
         self.assertEqual(
@@ -74,7 +74,7 @@ class TestCollect(Base):
     def test_latest_version_wins(self):
         # 三个 target 同名 skill, mtime 不同 -> 最新进 canonical
         t = time.time()
-        mkskill(self.cfg.skill_targets["codex"], "bar", "old", mtime=t - 100)
+        mkskill(self.cfg.skill_targets["agents"], "bar", "old", mtime=t - 100)
         mkskill(self.cfg.skill_targets["claude-code"], "bar", "newest", mtime=t)
         mkskill(self.cfg.skill_targets["agents"], "bar", "mid", mtime=t - 50)
         self.run_sync()
@@ -83,7 +83,7 @@ class TestCollect(Base):
 
     def test_dot_prefixed_excluded(self):
         # dot 前缀 skill 不收集
-        mkskill(self.cfg.skill_targets["codex"], ".hidden", "secret")
+        mkskill(self.cfg.skill_targets["agents"], ".hidden", "secret")
         self.run_sync()
         self.assertFalse((self.cfg.shared_skills / ".hidden").exists())
 
@@ -91,7 +91,7 @@ class TestCollect(Base):
         # canonical 已存在旧版, target 有更新真实版 -> 迁移 + 备份旧 canonical
         t = time.time()
         mkskill(self.cfg.shared_skills, "baz", "old-canon", mtime=t - 100)
-        mkskill(self.cfg.skill_targets["codex"], "baz", "new-target", mtime=t)
+        mkskill(self.cfg.skill_targets["agents"], "baz", "new-target", mtime=t)
         plan, result = self.run_sync()
         self.assertEqual(
             (self.cfg.shared_skills / "baz" / "SKILL.md").read_text(), "new-target")
@@ -113,9 +113,9 @@ class TestMap(Base):
     def test_real_dir_backed_up_then_replaced(self):
         # canonical 有, target 是真实目录 -> 备份后替换为链接
         mkskill(self.cfg.shared_skills, "rr", "canon")
-        mkskill(self.cfg.skill_targets["codex"], "rr", "real-target")
+        mkskill(self.cfg.skill_targets["agents"], "rr", "real-target")
         plan, result = self.run_sync()
-        entry = self.cfg.skill_targets["codex"] / "rr"
+        entry = self.cfg.skill_targets["agents"] / "rr"
         self.assertTrue(entry.is_symlink(), "真实目录应被替换为链接")
         self.assertTrue(result.backups or result.replaced)
         # 备份里能找到 real-target 内容
@@ -126,7 +126,7 @@ class TestMap(Base):
 
 class TestIdempotency(Base):
     def test_second_run_no_changes(self):
-        mkskill(self.cfg.skill_targets["codex"], "idem", "v1")
+        mkskill(self.cfg.skill_targets["agents"], "idem", "v1")
         self.run_sync(ts="20260622-201530")
         # 第二次跑: 计划应全是 skip, 无 collect/migrate/replace/link
         eng = self.engine(ts="20260622-202020")
@@ -146,8 +146,8 @@ class TestSymlinkRepair(Base):
         # 别处的真实更新内容
         elsewhere = self.tmp / "elsewhere" / "sk"
         touch(elsewhere / "SKILL.md", "newer-elsewhere", mtime=t)
-        # codex/skills/sk -> 指向 elsewhere (错误链接)
-        entry = self.cfg.skill_targets["codex"] / "sk"
+        # agents/skills/sk -> 指向 elsewhere (错误链接)
+        entry = self.cfg.skill_targets["agents"] / "sk"
         entry.parent.mkdir(parents=True, exist_ok=True)
         entry.symlink_to(elsewhere)
 
@@ -163,7 +163,7 @@ class TestSymlinkRepair(Base):
     def test_broken_symlink_repaired(self):
         # canonical 有, target 是断链 -> 修复指向 canonical
         mkskill(self.cfg.shared_skills, "bk", "canon")
-        entry = self.cfg.skill_targets["codex"] / "bk"
+        entry = self.cfg.skill_targets["agents"] / "bk"
         entry.parent.mkdir(parents=True, exist_ok=True)
         entry.symlink_to(self.tmp / "nonexistent")
         self.assertTrue(entry.is_symlink() and not entry.exists())  # 断链
@@ -225,7 +225,7 @@ class TestNonDirSkill(Base):
         # canonical 有内容 skill; target 同名是空目录且 mtime 更新 -> 不覆盖
         t = time.time()
         mkskill(self.cfg.shared_skills, "es", "canon-body", mtime=t - 100)
-        empty = self.cfg.skill_targets["codex"] / "es"
+        empty = self.cfg.skill_targets["agents"] / "es"
         empty.mkdir(parents=True)
         os.utime(empty, (t, t))  # 空目录, 更新 mtime
         plan, result = self.run_sync()

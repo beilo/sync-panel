@@ -79,9 +79,8 @@ export const api = {
     invoke<TargetStatus>("target_status", { target }),
 };
 
-// 三个固定 target — 与设计文档一致。
+// 展示 target 与真实同步 target 解耦: Codex 官方读取 ~/.agents/skills, 所以 Agent Skills 只维护这一处。
 export const TARGETS = [
-  { id: "codex", label: "Codex" },
+  { id: "agent-skills", label: "Agent Skills" },
   { id: "claude-code", label: "Claude Code" },
-  { id: "agents", label: ".agents" },
 ] as const;

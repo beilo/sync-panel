@@ -189,6 +189,12 @@ body { margin: 0; }
   color: #000;
   font-weight: bold;
 }
+.status-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #333; /* 说明合并原因, 避免用户把同源目录当成两套技能 */
+}
 
 /* ============================================================
  * 文件树 — 像手绘的层级结构

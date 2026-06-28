@@ -108,7 +108,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("plan", help="输出 dry-run plan JSON")
     sub.add_parser("apply", help="真执行并输出结果 JSON")
     p_status = sub.add_parser("status", help="输出某 target 状态 JSON")
-    p_status.add_argument("--target", required=True, choices=["codex", "claude-code", "agents"])
+    # agent-skills 是 UI 视图; codex 只保留 rule 状态调试, 不再管理 ~/.codex/skills。
+    p_status.add_argument("--target", required=True, choices=["agent-skills", "codex", "claude-code", "agents"])
 
     args = parser.parse_args(argv)
 

@@ -10,13 +10,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
-# 工具标识 — 也用作 backup 分组名 (codex / claude-code / agents)
+# 工具标识 — 也用作 backup 分组名。Codex 只保留 rule 映射; skills 走通用 Agent Skills。
 TOOL_CODEX = "codex"
 TOOL_CLAUDE = "claude-code"
 TOOL_AGENTS = "agents"
 
-# 三个 skill target 工具顺序固定, latest-version 比较时也按此顺序遍历
-SKILL_TOOLS = (TOOL_CODEX, TOOL_CLAUDE, TOOL_AGENTS)
+# Codex 官方读取 ~/.agents/skills; 不再维护 ~/.codex/skills, 避免同一技能出现两份入口。
+SKILL_TOOLS = (TOOL_CLAUDE, TOOL_AGENTS)
 
 
 @dataclass(frozen=True)
@@ -90,7 +90,6 @@ def default_config(home: Path | None = None) -> Config:
         shared_rules=shared_rules,
         backups_root=workspace / ".sync-backups",
         skill_targets={
-            TOOL_CODEX: home / ".codex" / "skills",
             TOOL_CLAUDE: home / ".claude" / "skills",
             TOOL_AGENTS: home / ".agents" / "skills",
         },

@@ -3,7 +3,7 @@
 设计文档: docs/superpowers/specs/2026-06-22-ai-workspace-sync-panel-design.md
 
 把 /Users/am/ai-workspace 作为全局 skills/rules 的唯一真相源,
-再用 symlink 把各工具 (Codex / Claude Code / .agents) 的全局位置映射回来。
+再用 symlink 映射 Claude Code 与通用 Agent Skills；Codex skills 直接复用 ~/.agents/skills。
 """
 
 from .config import Config, default_config

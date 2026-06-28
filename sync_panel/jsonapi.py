@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from .config import Config, SKILL_TOOLS, default_config
+from .config import Config, SKILL_TOOLS, TOOL_AGENTS, TOOL_CODEX, default_config
 from .engine import BackupFailed, SyncEngine
 from .model import Plan
 
@@ -140,19 +140,33 @@ def apply_sync(cfg: Config, timestamp: str) -> dict:
 
 # ---------------------------------------------------------------- target 状态
 
-def target_status(cfg: Config, timestamp: str, target: str) -> dict:
-    """某 target 的同步状态: 从 plan 过滤该 tool 的条目。
+AGENT_SKILLS_TARGET = "agent-skills"
 
-    target: 'codex' | 'claude-code' | 'agents'。
-    不独立浏览 target 目录 — 状态来自 plan (设计要求)。
-    """
-    if target not in SKILL_TOOLS:
+
+def _agent_skill_items(cfg: Config, plan: Plan) -> list[dict]:
+    """Agent Skills 视图只展示 ~/.agents/skills; Codex 官方也读取这个位置。"""
+    items: list[dict] = []
+    for a in plan.actions:
+        if a.tool != TOOL_AGENTS:
+            continue
+        item = a.to_dict(canonical_root=cfg.workspace)
+        item["tool"] = AGENT_SKILLS_TARGET
+        items.append(item)
+    return items
+
+
+def target_status(cfg: Config, timestamp: str, target: str) -> dict:
+    """某 target 的同步状态: 从 plan 过滤条目, 不独立浏览 target 目录。"""
+    if target not in (*SKILL_TOOLS, AGENT_SKILLS_TARGET, TOOL_CODEX):
         return {"error": f"未知 target: {target}"}
     engine = SyncEngine(cfg, timestamp)
     plan = engine.build_plan()
-    items = [
-        a.to_dict(canonical_root=cfg.workspace)
-        for a in plan.actions
-        if a.tool == target
-    ]
+    if target == AGENT_SKILLS_TARGET:
+        items = _agent_skill_items(cfg, plan)
+    else:
+        items = [
+            a.to_dict(canonical_root=cfg.workspace)
+            for a in plan.actions
+            if a.tool == target
+        ]
     return {"target": target, "items": items, "count": len(items)}

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-06-27
+
+- 依据 Codex 官方技能目录语义，`Agent Skills` 改为只维护 `~/.agents/skills`；Codex 直接读取该目录，不再维护 `~/.codex/skills` 入口。
+- `rule` 同步逻辑保持不变；Codex 仍只保留 `~/.codex/AGENTS.md` rule 映射。
+
 ## 2026-06-23
 
 - Sync 弹窗文案彻底中文化：动作名单字、路径标签短打、确认按钮「搞」/「算了」、标题「咋回事」。
