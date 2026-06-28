@@ -2,6 +2,7 @@
 
 ## 2026-06-27
 
+- 发布版本 `v0.1.1`：用于分发包含 Agent Skills 目录调整与新版图标的 macOS 安装包。
 - 依据 Codex 官方技能目录语义，`Agent Skills` 改为只维护 `~/.agents/skills`；Codex 直接读取该目录，不再维护 `~/.codex/skills` 入口。
 - `rule` 同步逻辑保持不变；Codex 仍只保留 `~/.codex/AGENTS.md` rule 映射。
 
